@@ -3,7 +3,7 @@
 """
 Code to load an expert policy and generate roll-out data for behavioral cloning.
 Example usage:
-    python run_expert.py experts/Humanoid-v1.pkl Humanoid-v1 --render \
+    python3 run_expert.py experts/Humanoid-v2.pkl Humanoid-v2 --render \
             --num_rollouts 20
 
 Author of this script and included expert policies: Jonathan Ho (hoj@openai.com)
@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--max_timesteps", type=int)
     parser.add_argument('--num_rollouts', type=int, default=20,
                         help='Number of expert roll outs')
+    parser.add_argument("--save", action='store_true',
+                        help="save the observations and actions generated from the rollouts")
     args = parser.parse_args()
 
     print('loading and building expert policy')
@@ -35,7 +37,6 @@ def main():
     with tf.Session():
         tf_util.initialize()
 
-        import gym
         env = gym.make(args.envname)
         max_steps = args.max_timesteps or env.spec.timestep_limit
 
@@ -49,7 +50,7 @@ def main():
             totalr = 0.
             steps = 0
             while not done:
-                action = policy_fn(obs[None,:])
+                action = policy_fn(obs[None, :])
                 observations.append(obs)
                 actions.append(action)
                 obs, r, done, _ = env.step(action)
@@ -57,7 +58,7 @@ def main():
                 steps += 1
                 if args.render:
                     env.render()
-                if steps % 100 == 0: print("%i/%i"%(steps, max_steps))
+                if steps % 100 == 0: print("%i/%i" % (steps, max_steps))
                 if steps >= max_steps:
                     break
             returns.append(totalr)
@@ -69,8 +70,10 @@ def main():
         expert_data = {'observations': np.array(observations),
                        'actions': np.array(actions)}
 
-        with open(os.path.join('expert_data', args.envname + '.pkl'), 'wb') as f:
-            pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
+        if args.save:
+            with open(os.path.join(
+                'expert_data', args.envname + '-%irollouts.pkl' % args.num_rollouts), 'wb') as f:
+                pickle.dump(expert_data, f, pickle.HIGHEST_PROTOCOL)
 
 if __name__ == '__main__':
     main()
