@@ -58,7 +58,7 @@ With DAgger, the humanoid can run a couple more steps than what we saw from befo
 
 ![humanoid_dagger.gif](img/humanoid_dagger.gif)
 
-More qualitative evluation is logged in `log.txt`.
+More qualitative evaluation is logged in `log.txt`.
 
 ### Example usage
 After implementation Here are the example commands:
