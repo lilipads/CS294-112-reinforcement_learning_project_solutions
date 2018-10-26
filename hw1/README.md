@@ -9,7 +9,7 @@ The given instruction (see hw1.pdf) omits many details. Here I will provide a mo
 To start off, we are provided with a few trained expert policies. The trained models, namely the experts, can successfully execute all these tasks; our goal is to treat these as the golden standard and learn after the experts. Their model parameters (weights, biases, activation functions for a feed forward neural network) are saved as pickle files in `experts/` directory.
 
 See demo gif of executing the humanoid task with the expert policy (one rollout, played on repeat):
-[demo video](img/humanoid_expert.gif)
+![demo video](img/humanoid_expert.gif)
 
 To load the demo yourself, download all the dependencies, make a directory named "expert_data", and run `bash demo.bash` (change `python` to `python3` if python3 is not your default python option). The default camera angle does not show much happenings. Press `tab` key once to switch for a better camera angle in the simulator. Also, lower the simulation speed with `s` key if necessary. 
 
@@ -37,7 +37,7 @@ The `run_expert.py` script loads the environment and the expert policy and saves
 
 ## My Solution
 ### Behaviorial Cloning
-The native behaviorial cloning is a supervised learning problem. We run the expert policy a number of times and these observation and action pairs become our labelled training data.
+The naive behaviorial cloning is a supervised learning problem. We run the expert policy a number of times and these observation and action pairs become our labelled training data.
 
 I used a neural network to accomplish the supervised learning. For a fair comparison, I mimiced the network achitecture of the expert models: two hidden layers, each of dimension 64, with tanh as the activaiton function. See implementation of `train_imitation.py`.
 
@@ -45,18 +45,18 @@ Simple behaviorial cloning get us comparable performance to the expert policy in
 
 See the Reacher learned from imitation:
 
-[reacher_gif](img/Reacher_imitation.gif)
+![reacher_gif](img/Reacher_imitation.gif)
 
-In contrast, in the Humanoid task, behavior cloning does not get us very far -- as you can see in the gif below, it falls over after two or three baby steps. It is also a higher-dimension and much harder problem:
+In contrast, in the Humanoid task, behavior cloning does not get us very far -- as you can see in the gif below, it falls over after two or three baby steps. It is also a higher-dimensional and much harder problem:
 
-[humanoid_gif](img/humanoid_imitation.gif)
+![humanoid_gif](img/humanoid_imitation.gif)
 
 ### DAgger
 The problem of naive behavior cloning is that once the agent makes a small mistake in the beginning stages, it steps into a new observation space that is not seen in the training data. From there, the agent does not know how to recover. What the DAgger algorithm does is that after we train a few epochs, we run our half-learned policy on the agent. We save those observations, and ask the expert policy to evaluate what action it would take if given such observations. We append the new data points to the training dataset and iterate. See implementation in `train_imitation.py:prepare_dagger_data()` and `run_imitation.py`.
 
 With DAgger, the humanoid can run a couple more steps than what we saw from before without falling, but is still far from comparable to expert policy.
 
-[humanoid_dagger.gif](img/humanoid_dagger.gif)
+![humanoid_dagger.gif](img/humanoid_dagger.gif)
 
 More qualitative evluation is logged in `log.txt`.
 
@@ -76,7 +76,8 @@ python3 train_imitation.py Reacher-v2-1000rollouts.pkl --epoch 200 --save
 
 Problem 2.2
 To run the trained imitation learning model and get the reported mean and standard deviation of return:
-```python3 run_imitation.py Reacher-v2-1000rollouts-epoch200.ckpt
+```
+python3 run_imitation.py Reacher-v2-1000rollouts-epoch200.ckpt
 ```
 
 Add `--render` to view the agent in action in the simulator.
@@ -86,7 +87,6 @@ To train the imitation learning model with DAgger:
 ```
 python3 train_imitation.py Reacher-v2-100rollouts.pkl --dagger --expert_policy_file experts/Reacher-v2.pkl\
     --epoch 30 --dagger_iterations 30 --dagger_num_rollouts 100 --save
-
 ```
 
 Problem 3.2
