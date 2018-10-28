@@ -135,7 +135,7 @@ class Agent(object):
                 Pass in self.n_layers for the 'n_layers' argument, and
                 pass in self.size for the 'size' argument.
         """
-        scope = "fully_connected_nn"
+        scope = "nn_policy"
         if self.discrete:
             self.sy_logits_na = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
@@ -145,7 +145,8 @@ class Agent(object):
             sy_mean = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
-            sy_logstd = tf.get_variable(name="logstd", shape=[self.ac_dim], dtype=tf.float32)
+            sy_logstd = tf.get_variable(name="logstd", shape=[self.ac_dim], dtype=tf.float32,
+                initializer=tf.ones_initializer)
             return (sy_mean, sy_logstd)
 
     #========================================================================================#
@@ -274,17 +275,17 @@ class Agent(object):
         # neural network baseline. These will be used to fit the neural network baseline. 
         #========================================================================================#
         if self.nn_baseline:
-            raise NotImplementedError
             self.baseline_prediction = tf.squeeze(build_mlp(
                                     self.sy_ob_no, 
                                     1, 
                                     "nn_baseline",
                                     n_layers=self.n_layers,
                                     size=self.size))
-            # YOUR_CODE_HERE
-            self.sy_target_n = None
-            baseline_loss = None
-            self.baseline_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(baseline_loss)
+            self.sy_target_n = tf.placeholder(shape=[None], name="reward_label", dtype=tf.float32)
+            self.baseline_loss = tf.losses.mean_squared_error(self.sy_target_n, self.baseline_prediction,
+                scope="nn_baseline_loss")
+            self.baseline_update_op = tf.train.AdamOptimizer(self.learning_rate).minimize(
+                self.baseline_loss)
 
     def sample_trajectories(self, itr, env):
         # Collect paths until we have enough timesteps
@@ -443,8 +444,8 @@ class Agent(object):
             # Hint #bl1: rescale the output from the nn_baseline to match the statistics
             # (mean and std) of the current batch of Q-values. (Goes with Hint
             # #bl2 in Agent.update_parameters.
-            raise NotImplementedError
-            b_n = None # YOUR CODE HERE
+            b_n = self.sess.run(self.baseline_prediction, feed_dict={self.sy_ob_no: ob_no})
+            b_n = (b_n - b_n.mean()) / b_n.std() * q_n.std() + q_n.mean()
             adv_n = q_n - b_n
         else:
             adv_n = q_n.copy()
@@ -513,8 +514,9 @@ class Agent(object):
             # targets to have mean zero and std=1. (Goes with Hint #bl1 in 
             # Agent.compute_advantage.)
 
-            # YOUR_CODE_HERE
-            target_n = None 
+            target_n = (q_n - q_n.mean()) / q_n.std()
+            _, baseline_loss = self.sess.run([self.baseline_update_op, self.baseline_loss],
+                feed_dict={self.sy_ob_no: ob_no, self.sy_target_n: target_n})
 
         #====================================================================================#
         #                           ----------PROBLEM 3----------
