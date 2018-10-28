@@ -6,7 +6,7 @@ In this project, I implemented policy gradient algorithm for reinforcement learn
 ## Method
 Read `train_pg_f18.py` for implmentation of the model. 
 
-![computational_graph](img/computational_graph.png)
+![computational_graph](img/graph.png)
 
 The figure above illustrates the computational graph of the model. We run two types of loops on this graph, illustrated by the orange arrows and gray arrows. 
 
