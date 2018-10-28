@@ -1,7 +1,7 @@
 # CS294-112 HW 2: Policy Gradient
 
 ## Background
-In this project, I implemented policy gradient algorithm for reinforcement learning and qualitatively compared a few variants of it: adding reward to go (reward to go), normalize the reward (normalize), and subtracting the reward by different baselines (baseline). The purpose of all these variants are to reduce the variance and improve the model.
+In this project, I implemented policy gradient algorithm for reinforcement learning and qualitatively compared a few variants of it: adding reward to go (reward to go), normalize the reward (normalize), subtracting the reward by different baselines (baseline) and a baseline that is predicted with a neural network (baseline_nn). The purpose of all these variants are to reduce the variance and improve the model.
 
 ## Method
 Read `train_pg_f18.py` for implmentation of the model. 
@@ -12,7 +12,9 @@ The figure above illustrates the computational graph of the model. We run two ty
 
 First is the orange loop, which involves both tensorflow and the simulator (dashed lines).  We feed an observation into our network which generates a distrbution of actions; we sample an action from the distribution. We execute that action in the simualator which in turn gives us a new observation and a reward. We repeat the cycle multiple times and collect the set of observations, actions and rewards.
 
-Next, we move onto the gray loop. We feed the network with the data we just collected. This time, we know the reward, so we can use it to calculate the advantage and eventually the loss function. This way, we can backpropagate and update the variables in the neural network.s
+Next, we move onto the gray loop. We feed the network with the data we just collected. This time, we know the reward, so we can use it to calculate the advantage and eventually the loss function. This way, we can backpropagate and update the variables in the neural network.
+
+There is one more piece not shown in the above graph. Later on, we add one more component: instead of using the average as the baseline, we build a neural network to predict the reward given observation. The training data is the reward and observation we collected from the simulator so far.
 
 Since the computational graph for this algorithm is more complex than the usual deep learning pipelines for supervised learning, here are some useful debugging tips:
 

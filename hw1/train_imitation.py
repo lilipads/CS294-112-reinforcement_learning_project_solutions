@@ -65,13 +65,13 @@ def build_model(input_placeholder, label_placeholder, output_dim):
 
     """    
     fc1 = tf.contrib.layers.fully_connected(input_placeholder, 64,
-        weights_regularizer=tf.contrib.layers.l2_regularizer(args.learning_rate),
+        weights_regularizer=tf.contrib.layers.l2_regularizer(args.regularization_weight),
         activation_fn=tf.tanh)
     fc2 = tf.contrib.layers.fully_connected(fc1, 64,
-        weights_regularizer=tf.contrib.layers.l2_regularizer(args.learning_rate),
+        weights_regularizer=tf.contrib.layers.l2_regularizer(args.regularization_weight),
         activation_fn=tf.tanh)
     output = tf.contrib.layers.fully_connected(fc2, output_dim, activation_fn=None,
-        weights_regularizer=tf.contrib.layers.l2_regularizer(args.learning_rate))
+        weights_regularizer=tf.contrib.layers.l2_regularizer(args.regularization_weight))
     
     mse_loss = tf.losses.mean_squared_error(
         label_placeholder,
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--epoch", type=int, default=30)
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--learning_rate", type=float, default=0.001)
+    parser.add_argument("--regularization_weight", type=float, default=0.001)
 
     parser.add_argument("--save", action='store_true', help="save the trained tf model")
     args = parser.parse_args()
