@@ -30,7 +30,7 @@ We first tested on the Carpole task. The goal is to move the cart in such a way 
 
 ![learned](img/learned.gif)
 
-Adding reward-to-go and normalization progressively improves the performance of the model as reflected by the larger average reward. Notice also how the variance shrinks too.
+Adding reward-to-go and normalization progressively improves the performance of the model as reflected by the larger average reward. Notice also how the variance shrinks too. In this simple task, using the neural network to predict reward (nn_baseline) is actually worse than simply using the average of the reward as the baseline (normalize).
 
 ![compare_features](img/compare_features.png)
 
