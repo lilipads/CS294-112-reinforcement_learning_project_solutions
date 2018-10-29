@@ -137,7 +137,7 @@ class Agent(object):
         """
         scope = "nn_policy"
         if self.discrete:
-            self.sy_logits_na = build_mlp(
+            sy_logits_na = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
             return sy_logits_na

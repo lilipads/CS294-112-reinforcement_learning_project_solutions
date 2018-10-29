@@ -29,18 +29,18 @@ random seeds. The runner code stored it in the directory structure
 To plot learning curves from the experiment, averaged over all random
 seeds, call
 
-    python plot.py data/test_EnvName_DateTime --value AverageReturn
+    python plot.py test_EnvName_DateTime --value AverageReturn
 
 and voila. To see a different statistics, change what you put in for
 the keyword --value. You can also enter /multiple/ values, and it will 
-make all of them in order.
+make all of them in order. The path is the part after `data/`.
 
 
 Suppose you ran two experiments: 'test1' and 'test2'. In 'test2' you tried
 a different set of hyperparameters from 'test1', and now you would like 
 to compare them -- see their learning curves side-by-side. Just call
 
-    python plot.py data/test1 data/test2
+    python plot.py test1 test2
 
 and it will plot them both! They will be given titles in the legend according
 to their exp_name parameters. If you want to use custom legend titles, use
@@ -104,10 +104,10 @@ def main():
     data = []
     if use_legend:
         for logdir, legend_title in zip(args.logdir, args.legend):
-            data += get_datasets(logdir, legend_title)
+            data += get_datasets("data/" + logdir, legend_title)
     else:
         for logdir in args.logdir:
-            data += get_datasets(logdir)
+            data += get_datasets("data/" + logdir)
 
     if isinstance(args.value, list):
         values = args.value
