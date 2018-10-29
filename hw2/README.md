@@ -1,7 +1,7 @@
 # CS294-112 HW 2: Policy Gradient
 
 ## Background
-In this project, I implemented policy gradient algorithm for reinforcement learning and qualitatively compared a few variants of it: adding reward to go (reward to go), normalize the reward (normalize), subtracting the reward by different baselines (baseline) and a baseline that is predicted with a neural network (baseline_nn). The purpose of all these variants are to reduce the variance and improve the model.
+In this project, I implemented policy gradient algorithm for reinforcement learning and qualitatively compared four variants of it: adding reward to go (reward to go), normalize the reward (normalization), subtracting the reward by a simple baseline of the average (baseline) and a baseline that is predicted by a neural network (baseline_nn). The purpose of all these variants are to reduce the variance and improve the model.
 
 ## Method
 Read `train_pg_f18.py` for implmentation of the model. 
