@@ -5,7 +5,6 @@ Adapted for CS294-112 Fall 2018 by Soroush Nasiriany, Sid Reddy, and Greg Kahn
 """
 import numpy as np
 import tensorflow as tf
-import tensorflow_probability as tfp
 import gym
 import logz
 import os
@@ -292,7 +291,7 @@ class Agent(object):
             # otherwise, it is 0
             # YOUR CODE HERE
             if done or steps > self.max_path_length:
-                terimnals.append(1)
+                terminals.append(1)
                 break
             else:
                 terminals.append(0)
@@ -331,17 +330,20 @@ class Agent(object):
         # YOUR CODE HERE
         
         adv_n = []
-        for ob, next_ob, re, terminal in (ob_no, next_ob_no, re_n, terminal_n):
+
+        v_s_tp1_n = self.sess.run(self.critic_prediction, feed_dict={
+            self.sy_ob_no: next_ob_no})
+        v_s_t_n = self.sess.run(self.critic_prediction, feed_dict={
+            self.sy_ob_no: ob_no})
+
+        for v_s_tp1, v_s_t, re, terminal in zip(v_s_tp1_n, v_s_t_n, re_n, terminal_n):
             q = re
             if not terminal:
-                v_s_tp1 = self.session.run(self.critic_prediction, feed_dict={
-                    self.sy_ob_no: next_ob})
                 q += self.gamma * v_s_tp1
-            v_s_t = self.session.run(self.critic_prediction, feed_dict={
-                self.sy_ob_no: ob})
             adv_n.append(q - v_s_t)
 
         if self.normalize_advantages:
+            adv_n = np.array(adv_n)
             adv_n = (adv_n - adv_n.mean()) / adv_n.std() # YOUR_HW2 CODE_HERE
         return adv_n
 
@@ -374,13 +376,16 @@ class Agent(object):
         # YOUR CODE HERE
         for i in range(self.num_target_updates):
             target_n = []
-            for re, next_ob, terminal in (re_n, next_ob_no, terminal_n):
-                v_s_tp1 = self.session.run(self.critic_prediction, feed_dict={
-                    self.sy_ob_no: next_ob})
-                target_n.append(re + self.gamma * v_s_tp1)
+            v_s_tp1_n = self.sess.run(self.critic_prediction, feed_dict={
+                self.sy_ob_no: next_ob_no})
+            for re, v_s_tp1, terminal in zip(re_n, v_s_tp1_n, terminal_n):
+                if not terminal:
+                    target_n.append(re + self.gamma * v_s_tp1)
+                else:
+                    target_n.append(re)
 
             for j in range(self.num_grad_steps_per_target_update):
-                self.session.run(self.critic_update_op, feed_dict={
+                self.sess.run(self.critic_update_op, feed_dict={
                     self.sy_target_n: target_n,
                     self.sy_ob_no: ob_no
                     })
@@ -505,7 +510,9 @@ def train_AC(
         # (2) use the updated critic to compute the advantage by, calling agent.estimate_advantage
         # (3) use the estimated advantage values to update the actor, by calling agent.update_actor
         # YOUR CODE HERE
-        raise NotImplementedError
+        agent.update_critic(ob_no, next_ob_no, re_n, terminal_n)
+        adv_n = agent.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
+        agent.update_actor(ob_no, ac_na, adv_n)
 
         # Log diagnostics
         returns = [path["reward"].sum() for path in paths]
