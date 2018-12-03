@@ -10,6 +10,7 @@ import tensorflow                as tf
 import tensorflow.contrib.layers as layers
 from collections import namedtuple
 from dqn_utils import *
+import os
 
 OptimizerSpec = namedtuple("OptimizerSpec", ["constructor", "kwargs", "lr_schedule"])
 
@@ -31,7 +32,7 @@ class QLearner(object):
     frame_history_len=4,
     target_update_freq=10000,
     grad_norm_clipping=10,
-    rew_file=None,
+    data_dir=None,
     double_q=True,
     lander=False):
     """Run Deep Q-learning algorithm.
@@ -99,8 +100,7 @@ class QLearner(object):
     self.env = env
     self.session = session
     self.exploration = exploration
-    self.rew_file = str(uuid.uuid4()) + '.pkl' if rew_file is None else rew_file
-
+    
     ###############
     # BUILD MODEL #
     ###############
@@ -115,21 +115,21 @@ class QLearner(object):
 
     # set up placeholders
     # placeholder for current observation (or state)
-    self.obs_t_ph              = tf.placeholder(
+    self.obs_t_ph = tf.placeholder(
         tf.float32 if lander else tf.uint8, [None] + list(input_shape))
     # placeholder for current action
-    self.act_t_ph              = tf.placeholder(tf.int32,   [None])
+    self.act_t_ph = tf.placeholder(tf.int32,   [None])
     # placeholder for current reward
-    self.rew_t_ph              = tf.placeholder(tf.float32, [None])
+    self.rew_t_ph = tf.placeholder(tf.float32, [None])
     # placeholder for next observation (or state)
-    self.obs_tp1_ph            = tf.placeholder(
+    self.obs_tp1_ph = tf.placeholder(
         tf.float32 if lander else tf.uint8, [None] + list(input_shape))
     # placeholder for end of episode mask
     # this value is 1 if the next state corresponds to the end of an episode,
     # in which case there is no Q-value at the next state; at the end of an
     # episode, only the current state reward contributes to the target, not the
     # next state Q-value (i.e. target is just rew_t_ph, not rew_t_ph + gamma * q_tp1)
-    self.done_mask_ph          = tf.placeholder(tf.float32, [None])
+    self.done_mask_ph = tf.placeholder(tf.float32, [None])
 
     # casting to float on GPU ensures lower data transfer times.
     if lander:
@@ -139,7 +139,7 @@ class QLearner(object):
       obs_t_float   = tf.cast(self.obs_t_ph,   tf.float32) / 255.0
       obs_tp1_float = tf.cast(self.obs_tp1_ph, tf.float32) / 255.0
 
-    # Here, you should fill in your own code to compute the Bellman error. This requires
+    # 1. Here, you should fill in your own code to compute the Bellman error. This requires
     # evaluating the current and next Q-values and constructing the corresponding error.
     # TensorFlow will differentiate this error for you, you just need to pass it to the
     # optimizer. See assignment text for details.
@@ -159,7 +159,20 @@ class QLearner(object):
     ######
 
     # YOUR CODE HERE
+    q = q_func(obs_t_float, self.num_actions, "q_func")
+    self.predicted_best_action = tf.argmax(q, axis=1)
+    target_q = q_func(obs_tp1_float, self.num_actions, "target_q_func")
 
+    if double_q:
+      target_q_a = tf.reduce_sum(target_q * tf.one_hot(self.predicted_best_action, depth=self.num_actions), axis=1)
+    else:
+      target_q_a = tf.reduce_max(target_q, axis=1)
+    
+    q_a = tf.reduce_sum(q * tf.one_hot(self.act_t_ph, depth=self.num_actions), axis=1)
+    y = self.rew_t_ph + (1 - self.done_mask_ph) * gamma * target_q_a
+    self.total_error = 0.5 * tf.reduce_sum(huber_loss(q_a - tf.stop_gradient(y)))
+    q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='q_func')
+    target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_q_func')
     ######
 
     # construct optimization op (with gradient clipping)
@@ -191,6 +204,19 @@ class QLearner(object):
 
     self.start_time = None
     self.t = 0
+
+    ###############
+    # LOGGING     #
+    ###############
+    self.log_timesteps = []
+    self.log_mean_reward = []
+    self.log_best_mean_reward = []
+    self.data_dir = str(uuid.uuid4()) if data_dir is None else data_dir
+    self.data_dir = os.path.join('qlearning_data', self.data_dir)
+    if not(os.path.exists('qlearning_data')):
+        os.makedirs('qlearning_data')
+    if not(os.path.exists(self.data_dir)):
+        os.makedirs(self.data_dir)
 
   def stopping_criterion_met(self):
     return self.stopping_criterion is not None and self.stopping_criterion(self.env, self.t)
@@ -229,6 +255,20 @@ class QLearner(object):
     #####
 
     # YOUR CODE HERE
+    self.replay_buffer_idx = self.replay_buffer.store_frame(self.last_obs)
+
+    random_num = random.random()
+    if not self.model_initialized or random_num < self.exploration.value(self.t):
+      action = random.randint(0, self.num_actions - 1)
+    else:
+      action = self.session.run(self.predicted_best_action,
+        feed_dict={self.obs_t_ph: 
+          [self.replay_buffer.encode_recent_observation()]})[0]  # difference
+
+    self.last_obs, reward, done, _ = self.env.step(action)
+    self.replay_buffer.store_effect(self.replay_buffer_idx, action, reward, done)
+    if done:
+      self.last_obs = self.env.reset()
 
   def update_model(self):
     ### 3. Perform experience replay and train the network.
@@ -274,6 +314,28 @@ class QLearner(object):
       #####
 
       # YOUR CODE HERE
+      obs_batch, act_batch, rew_batch, next_obs_batch, done_mask = self.replay_buffer.sample(
+        self.batch_size)
+
+      if not self.model_initialized:
+        initialize_interdependent_variables(self.session, tf.global_variables(), {
+          self.obs_t_ph: obs_batch,
+          self.obs_tp1_ph: next_obs_batch,
+        })
+        self.session.run(self.update_target_fn)
+        self.model_initialized = True
+
+      self.session.run([self.train_fn, self.total_error], feed_dict={
+          self.obs_t_ph: obs_batch,
+          self.act_t_ph: act_batch,
+          self.rew_t_ph: rew_batch,
+          self.obs_tp1_ph: next_obs_batch,
+          self.done_mask_ph: done_mask,
+          self.learning_rate: self.optimizer_spec.lr_schedule.value(self.t)
+        })
+
+      if self.num_param_updates % self.target_update_freq == 0:
+        self.session.run(self.update_target_fn)
 
       self.num_param_updates += 1
 
@@ -302,8 +364,16 @@ class QLearner(object):
 
       sys.stdout.flush()
 
-      with open(self.rew_file, 'wb') as f:
-        pickle.dump(episode_rewards, f, pickle.HIGHEST_PROTOCOL)
+      self.log_timesteps.append(self.t)
+      self.log_mean_reward.append(self.mean_episode_reward)
+      self.log_best_mean_reward.append(self.best_mean_episode_reward)
+
+      with open(os.path.join(self.data_dir, 'timesteps.pkl'), 'wb') as f:
+        pickle.dump(self.log_timesteps, f, pickle.HIGHEST_PROTOCOL)
+      with open(os.path.join(self.data_dir, 'mean_reward.pkl'), 'wb') as f:
+        pickle.dump(self.log_mean_reward, f, pickle.HIGHEST_PROTOCOL)
+      with open(os.path.join(self.data_dir, 'best_mean_reward.pkl'), 'wb') as f:
+        pickle.dump(self.log_best_mean_reward, f, pickle.HIGHEST_PROTOCOL)
 
 def learn(*args, **kwargs):
   alg = QLearner(*args, **kwargs)

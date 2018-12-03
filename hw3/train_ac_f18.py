@@ -36,7 +36,11 @@ def build_mlp(input_placeholder, output_size, scope, n_layers, size, activation=
         Hint: use tf.layers.dense    
     """
     # YOUR HW2 CODE HERE
-    raise NotImplementedError
+    with tf.variable_scope(scope):
+        layer = input_placeholder
+        for _ in range(n_layers):
+            layer = tf.layers.dense(layer, size, activation=activation)
+        output_placeholder = tf.layers.dense(layer, output_size, output_activation)
     return output_placeholder
 
 def pathlength(path):
@@ -91,14 +95,13 @@ class Agent(object):
                 sy_ac_na: placeholder for actions
                 sy_adv_n: placeholder for advantages
         """
-        raise NotImplementedError
         sy_ob_no = tf.placeholder(shape=[None, self.ob_dim], name="ob", dtype=tf.float32)
         if self.discrete:
             sy_ac_na = tf.placeholder(shape=[None], name="ac", dtype=tf.int32) 
         else:
             sy_ac_na = tf.placeholder(shape=[None, self.ac_dim], name="ac", dtype=tf.float32) 
         # YOUR HW2 CODE HERE
-        sy_adv_n = None
+        sy_adv_n = tf.placeholder(shape=[None], name="advantage", dtype=tf.float32)
         return sy_ob_no, sy_ac_na, sy_adv_n
 
     def policy_forward_pass(self, sy_ob_no):
@@ -126,15 +129,18 @@ class Agent(object):
                 Pass in self.n_layers for the 'n_layers' argument, and
                 pass in self.size for the 'size' argument.
         """
-        raise NotImplementedError
+        scope = "nn_policy"
         if self.discrete:
-            # YOUR_HW2 CODE_HERE
-            sy_logits_na = None
+            sy_logits_na = build_mlp(
+                sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
+                activation=tf.nn.relu, output_activation=None)
             return sy_logits_na
         else:
-            # YOUR_HW2 CODE_HERE
-            sy_mean = None
-            sy_logstd = None
+            sy_mean = build_mlp(
+                sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
+                activation=tf.nn.relu, output_activation=None)
+            sy_logstd = tf.get_variable(name="logstd", shape=[self.ac_dim], dtype=tf.float32,
+                initializer=tf.ones_initializer)
             return (sy_mean, sy_logstd)
 
     def sample_action(self, policy_parameters):
@@ -161,15 +167,13 @@ class Agent(object):
         
                  This reduces the problem to just sampling z. (Hint: use tf.random_normal!)
         """
-        raise NotImplementedError
-        if self.discrete:
-            sy_logits_na = policy_parameters
-            # YOUR_HW2 CODE_HERE
-            sy_sampled_ac = None
-        else:
-            sy_mean, sy_logstd = policy_parameters
-            # YOUR_HW2 CODE_HERE
-            sy_sampled_ac = None
+        with tf.variable_scope("sampled_action"):
+            if self.discrete:
+                sy_logits_na = policy_parameters
+                sy_sampled_ac = tf.squeeze(tf.multinomial(sy_logits_na, 1), axis=1)
+            else:
+                sy_mean, sy_logstd = policy_parameters
+                sy_sampled_ac = sy_mean + sy_logstd * tf.random_normal(shape=tf.shape(sy_mean))
         return sy_sampled_ac
 
     def get_log_prob(self, policy_parameters, sy_ac_na):
@@ -193,15 +197,16 @@ class Agent(object):
                 For the discrete case, use the log probability under a categorical distribution.
                 For the continuous case, use the log probability under a multivariate gaussian.
         """
-        raise NotImplementedError
-        if self.discrete:
-            sy_logits_na = policy_parameters
-            # YOUR_HW2 CODE_HERE
-            sy_logprob_n = None
-        else:
-            sy_mean, sy_logstd = policy_parameters
-            # YOUR_HW2 CODE_HERE
-            sy_logprob_n = None
+        with tf.variable_scope("log_probability_of_sampled_action"):
+            if self.discrete:
+                sy_logits_na = policy_parameters
+                sy_logprob_n = - tf.nn.sparse_softmax_cross_entropy_with_logits(
+                    labels=sy_ac_na, 
+                    logits=sy_logits_na)
+            else:
+                sy_mean, sy_logstd = policy_parameters
+                probabilities = tf.distributions.Normal(sy_mean, sy_logstd).prob(sy_ac_na)
+                sy_logprob_n = tf.log(tf.reduce_prod(probabilities, axis=1))
         return sy_logprob_n
 
     def build_computation_graph(self):
@@ -274,24 +279,23 @@ class Agent(object):
                 env.render()
                 time.sleep(0.1)
             obs.append(ob)
-            raise NotImplementedError
-            ac = None # YOUR HW2 CODE HERE
+            ac = self.sess.run(self.sy_sampled_ac, feed_dict={self.sy_ob_no: ob[None, :]}) # YOUR HW2 CODE HERE
             ac = ac[0]
             acs.append(ac)
             ob, rew, done, _ = env.step(ac)
             # add the observation after taking a step to next_obs
             # YOUR CODE HERE
-            raise NotImplementedError
+            next_obs.append(ob)
             rewards.append(rew)
             steps += 1
             # If the episode ended, the corresponding terminal value is 1
             # otherwise, it is 0
             # YOUR CODE HERE
             if done or steps > self.max_path_length:
-                raise NotImplementedError
+                terimnals.append(1)
                 break
             else:
-                raise NotImplementedError
+                terminals.append(0)
         path = {"observation" : np.array(obs, dtype=np.float32), 
                 "reward" : np.array(rewards, dtype=np.float32), 
                 "action" : np.array(acs, dtype=np.float32),
@@ -325,12 +329,20 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing Q(s, a)
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-        raise NotImplementedError
-        adv_n = None
+        
+        adv_n = []
+        for ob, next_ob, re, terminal in (ob_no, next_ob_no, re_n, terminal_n):
+            q = re
+            if not terminal:
+                v_s_tp1 = self.session.run(self.critic_prediction, feed_dict={
+                    self.sy_ob_no: next_ob})
+                q += self.gamma * v_s_tp1
+            v_s_t = self.session.run(self.critic_prediction, feed_dict={
+                self.sy_ob_no: ob})
+            adv_n.append(q - v_s_t)
 
         if self.normalize_advantages:
-            raise NotImplementedError
-            adv_n = None # YOUR_HW2 CODE_HERE
+            adv_n = (adv_n - adv_n.mean()) / adv_n.std() # YOUR_HW2 CODE_HERE
         return adv_n
 
     def update_critic(self, ob_no, next_ob_no, re_n, terminal_n):
@@ -360,7 +372,18 @@ class Agent(object):
         # Note: don't forget to use terminal_n to cut off the V(s') term when computing the target
         # otherwise the values will grow without bound.
         # YOUR CODE HERE
-        raise NotImplementedError
+        for i in range(self.num_target_updates):
+            target_n = []
+            for re, next_ob, terminal in (re_n, next_ob_no, terminal_n):
+                v_s_tp1 = self.session.run(self.critic_prediction, feed_dict={
+                    self.sy_ob_no: next_ob})
+                target_n.append(re + self.gamma * v_s_tp1)
+
+            for j in range(self.num_grad_steps_per_target_update):
+                self.session.run(self.critic_update_op, feed_dict={
+                    self.sy_target_n: target_n,
+                    self.sy_ob_no: ob_no
+                    })
 
     def update_actor(self, ob_no, ac_na, adv_n):
         """ 
