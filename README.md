@@ -21,6 +21,7 @@ Learned task: Cart Pole
 In this project, I implemented Q learning and compared two variants of it: with and without double Q learning.
 
 Pong learned with Q learning (green is the trained agent):
+
 ![pong](hw3/img/pong.gif)
 
 ## hw4
