@@ -26,7 +26,7 @@ Since the computational graph for this algorithm is more complex than the usual 
 
 ## Results
 
-We first tested on the Carpole task. The goal is to move the cart in such a way that the pole does not fall down. See the gif for the learned behavior on our trained model:
+We first tested on the Cart-pole task. The goal is to move the cart in such a way that the pole does not fall down. See the gif for the learned behavior on our trained model:
 
 ![learned](img/learned.gif)
 
