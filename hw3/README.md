@@ -17,6 +17,16 @@ For the second part of the project, I implemented the actor-critic algorithm (tr
 
 Here are the cartpole training results with different hyperparameters. To read the legend, the first number denotes the number of times we update the target network per training cycle, and the second number denotes the number of times we take the gradient step to update the critic network for each target network udpate.
 
+![InvertedPendulum](img/inverted_pendulum_10_10.png)
+
+As shown, the policy gradient algorithm performs much better than actor critic: the former reaches maximum reward in 40 iterations, and the latter in 100 iterations.
+
+I also did the comparision for the half cheetah task. 
+
+![halfCheetah](img/half-cheetah.png)
+
+Here, the actor critic performs better than policy gradient.
+
 ## Dependencies:
  * Python **3.5**
  * Numpy version **1.14.5**
