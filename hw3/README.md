@@ -25,7 +25,8 @@ I also did the comparision for the half cheetah task.
 
 ![halfCheetah](img/half-cheetah.png)
 
-Here, the actor critic performs better than policy gradient.
+Here, the actor critic performs better than policy gradient. Performance does vary across the seed.
+
 
 ## Dependencies:
  * Python **3.5**
