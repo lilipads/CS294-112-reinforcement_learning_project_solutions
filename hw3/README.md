@@ -1,6 +1,23 @@
 # CS294-112 HW 3: Q-Learning
 
-Dependencies:
+## Q learning
+In this project, I implemented Q learning (dqn.py) and compared two variants of it: with and without double Q learning.
+
+![double_q](img/qlearning_pong_reward.png)
+
+Double Q learning results in higher rewards for the same number of episodes in the initial training. However, oddly, after ~800K steps, the double-q results are worse; and after 2.3m episodes, performance of the agent deteriorates.
+
+Here is a qualitative result of the Pong game learned with Q learning at peak performance (green is the trained agent):
+
+![pong](img/pong.gif)
+
+## Actor-Critic
+
+For the second part of the project, I implemented the actor-critic algorithm (train_ac_f18.py). 
+
+Here are the cartpole training results with different hyperparameters. To read the legend, the first number denotes the number of times we update the target network per training cycle, and the second number denotes the number of times we take the gradient step to update the critic network for each target network udpate.
+
+## Dependencies:
  * Python **3.5**
  * Numpy version **1.14.5**
  * TensorFlow version **1.10.5**
