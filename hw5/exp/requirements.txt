@@ -4,3 +4,4 @@ tensorflow
 numpy
 seaborn
 tqdm
+tensorflow-probability

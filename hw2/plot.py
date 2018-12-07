@@ -104,10 +104,12 @@ def main():
     data = []
     if use_legend:
         for logdir, legend_title in zip(args.logdir, args.legend):
-            data += get_datasets("data/" + logdir, legend_title)
+            # data += get_datasets("data/" + logdir, legend_title)
+            data += get_datasets(logdir, legend_title)
     else:
         for logdir in args.logdir:
-            data += get_datasets("data/" + logdir)
+            # data += get_datasets("data/" + logdir)
+            data += get_datasets(logdir)
 
     if isinstance(args.value, list):
         values = args.value

@@ -24,7 +24,7 @@ class ModelBasedPolicy(object):
         self._learning_rate = 1e-3
 
         self._sess, self._state_ph, self._action_ph, self._next_state_ph,\
-            self._next_state_pred, self._loss, self._optimizer, self._best_action = self._setup_graph()
+            self._sy_next_state_pred, self._sy_loss, self._optimizer, self._best_action = self._setup_graph()
 
     def _setup_placeholders(self):
         """
@@ -41,16 +41,18 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        state_ph = tf.placeholder(tf.float32, [None, self._state_dim])
+        action_ph = tf.placeholder(tf.int32,   [None, self._action_dim])
+        new_state_ph = tf.placeholder(tf.float32, [None, self._state_dim])
 
         return state_ph, action_ph, next_state_ph
 
-    def _dynamics_func(self, state, action, reuse):
+    def _dynamics_func(self, state_ph, action_ph):
         """
             Takes as input a state and action, and predicts the next state
 
             returns:
-                next_state_pred: predicted next state
+                sy_next_state_pred: symbolic operation for predicted next state
 
             implementation details (in order):
                 (a) Normalize both the state and action by using the statistics of self._init_dataset and
@@ -65,17 +67,25 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        sy_normed_state = utils.normalize(state_ph, self._init_dataset.state_mean(),
+            self._init_dataset.state_std())
+        sy_normed_action = utils.normalize(action_ph, self._init_dataset.action_mean(),
+            self._init_dataset.action_std())
+        sy_normed_state_action = tf.concat([sy_normed_state, sy_normed_action], 1)
+        sy_normed_next_state_diff_pred = utils.build_mlp(sy_normed_state_action,
+            self._state_dim, "dynamics")
+        sy_next_state_pred = utils.unnormalize(sy_normed_next_state_diff_pred,
+            self._init_dataset.state_mean(), self._init_dataset.state_std()) + state_ph
 
-        return next_state_pred
+        return sy_next_state_pred
 
-    def _setup_training(self, state_ph, next_state_ph, next_state_pred):
+    def _setup_training(self, state_ph, next_state_ph, sy_next_state_pred):
         """
             Takes as input the current state, next state, and predicted next state, and returns
             the loss and optimizer for training the dynamics model
 
             returns:
-                loss: Scalar loss tensor
+                sy_loss: Scalar loss tensor
                 optimizer: Operation used to perform gradient descent
 
             implementation details (in order):
@@ -88,10 +98,15 @@ class ModelBasedPolicy(object):
 
         """
         ### PROBLEM 1
-        ### YOUR CODE HERE
-        raise NotImplementedError
-
-        return loss, optimizer
+        sy_state_diff_pred = sy_next_state_pred - state_ph
+        sy_state_diff_actual = next_state_ph - state_ph
+        sy_normed_state_diff_pred = utils.normalize(sy_state_diff_pred, self._init_dataset.state_mean(),
+            self._init_dataset.state_std())
+        sy_normed_state_diff_actual = utils.normalize(sy_state_diff_actual, self._init_dataset.state_mean(),
+            self._init_dataset.state_std())
+        sy_loss = tf.losses.mean_squared_error(sy_normed_state_diff_pred, sy_normed_state_diff_actual)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self._learning_rate).minimize(sy_loss)
+        return sy_loss, optimizer
 
     def _setup_action_selection(self, state_ph):
         """
@@ -136,7 +151,10 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        state_ph, action_ph, next_state_ph = self._setup_placeholders()
+        sy_next_state_pred = self._dynamics_func()
+        sy_loss, optimizer = self._setup_training(state_ph, next_state_ph, sy_next_state_pred)
+
         ### PROBLEM 2
         ### YOUR CODE HERE
         best_action = None
@@ -144,7 +162,7 @@ class ModelBasedPolicy(object):
         sess.run(tf.global_variables_initializer())
 
         return sess, state_ph, action_ph, next_state_ph, \
-                next_state_pred, loss, optimizer, best_action
+                sy_next_state_pred, sy_loss, optimizer, best_action
 
     def train_step(self, states, actions, next_states):
         """
@@ -155,7 +173,10 @@ class ModelBasedPolicy(object):
         """
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        _ loss = self._sess.run([self._optimizer, self._sy_loss], feed_dict={
+            self._state_ph: states, self._next_state_ph: next_states,
+            self._action_ph: actions
+            })
 
         return loss
 
@@ -174,7 +195,9 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 1
         ### YOUR CODE HERE
-        raise NotImplementedError
+        next_state_pred = self._sess.run(self._sy_next_state_pred, feed_dict={
+            self._state_ph: state, self._action_ph: action
+            })
 
         assert np.shape(next_state_pred) == (self._state_dim,)
         return next_state_pred

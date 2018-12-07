@@ -112,7 +112,7 @@ class Dataset(object):
 
     def random_iterator(self, batch_size):
         """
-        Iterate once through all (s, a, r, s') in batches in a random order
+        Iterate once through all (s, a, r, s', done) in batches in a random order
         """
         all_indices = np.nonzero(np.logical_not(self._dones))[0]
         np.random.shuffle(all_indices)

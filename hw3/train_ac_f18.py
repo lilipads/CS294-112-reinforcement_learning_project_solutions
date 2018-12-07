@@ -12,6 +12,8 @@ import time
 import inspect
 from multiprocessing import Process
 
+EPSILON = 1e-8
+
 #============================================================================================#
 # Utilities
 #============================================================================================#
@@ -118,7 +120,7 @@ class Agent(object):
                     sy_logits_na: (batch_size, self.ac_dim)
 
                 if continuous, the parameters are a tuple (mean, log_std) of a Gaussian
-                    distribution over actions. log_std should just be a trainable
+                    distribution over actions. std should just be a trainable
                     variable, not a network output.
                     sy_mean: (batch_size, self.ac_dim)
                     sy_logstd: (self.ac_dim,)
@@ -138,7 +140,7 @@ class Agent(object):
             sy_mean = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
-            sy_logstd = tf.get_variable(name="logstd", shape=[self.ac_dim], dtype=tf.float32,
+            sy_logstd = tf.get_variable(name="sy_logstd", shape=[self.ac_dim], dtype=tf.float32,
                 initializer=tf.ones_initializer)
             return (sy_mean, sy_logstd)
 
@@ -152,7 +154,7 @@ class Agent(object):
                         sy_logits_na: (batch_size, self.ac_dim)
                     if continuous: (mean, log_std) of a Gaussian distribution over actions
                         sy_mean: (batch_size, self.ac_dim)
-                        sy_logstd: (self.ac_dim,)
+                        sy_std: (self.ac_dim,)
 
             returns:
                 sy_sampled_ac: 
@@ -172,7 +174,7 @@ class Agent(object):
                 sy_sampled_ac = tf.squeeze(tf.multinomial(sy_logits_na, 1), axis=1)
             else:
                 sy_mean, sy_logstd = policy_parameters
-                sy_sampled_ac = sy_mean + sy_logstd * tf.random_normal(shape=tf.shape(sy_mean))
+                sy_sampled_ac = sy_mean + tf.exp(sy_logstd) * tf.random_normal(shape=tf.shape(sy_mean))
         return sy_sampled_ac
 
     def get_log_prob(self, policy_parameters, sy_ac_na):
@@ -204,7 +206,7 @@ class Agent(object):
                     logits=sy_logits_na)
             else:
                 sy_mean, sy_logstd = policy_parameters
-                probabilities = tf.distributions.Normal(sy_mean, sy_logstd).prob(sy_ac_na)
+                probabilities = tf.distributions.Normal(sy_mean, tf.exp(sy_logstd)).prob(sy_ac_na)
                 sy_logprob_n = tf.log(tf.reduce_prod(probabilities, axis=1))
         return sy_logprob_n
 
@@ -344,7 +346,7 @@ class Agent(object):
 
         if self.normalize_advantages:
             adv_n = np.array(adv_n)
-            adv_n = (adv_n - adv_n.mean()) / adv_n.std() # YOUR_HW2 CODE_HERE
+            adv_n = (adv_n - adv_n.mean()) / (adv_n.std() + EPSILON) # YOUR_HW2 CODE_HERE
         return adv_n
 
     def update_critic(self, ob_no, next_ob_no, re_n, terminal_n):

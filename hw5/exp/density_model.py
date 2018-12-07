@@ -37,7 +37,8 @@ class Histogram(Density_Model):
                 2. increment self.total by "increment" 
         """
         bin_name = self.preprocessor(state)
-        raise NotImplementedError
+        self.hist[bin_name] += increment
+        self.total += increment
 
     def get_count(self, states):
         """
@@ -55,7 +56,8 @@ class Histogram(Density_Model):
                     1. get the bin_name using self.preprocessor
                     2. get the value of self.hist with key bin_name
         """
-        raise NotImplementedError
+        bin_names = [self.preprocessor(state) for state in states]
+        counts = [self.hist[bin_name] for bin_name in bin_names]
         return counts
 
     def get_prob(self, states):
@@ -72,7 +74,8 @@ class Histogram(Density_Model):
             NOTE:
                 remember to normalize by float(self.total)
         """
-        raise NotImplementedError
+        counts = get_count(states)
+        probs = [count * 1. / self.total for count in counts]
         return probs
 
 class RBF(Density_Model):

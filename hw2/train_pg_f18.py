@@ -12,6 +12,8 @@ import time
 import inspect
 from multiprocessing import Process
 
+EPSILON = 1e-8
+
 #============================================================================================#
 # Utilities
 #============================================================================================#
@@ -145,7 +147,7 @@ class Agent(object):
             sy_mean = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
-            sy_logstd = tf.get_variable(name="logstd", shape=[self.ac_dim], dtype=tf.float32,
+            sy_logstd = tf.get_variable(name="sy_logstd", shape=[self.ac_dim], dtype=tf.float32,
                 initializer=tf.ones_initializer)
             return (sy_mean, sy_logstd)
 
@@ -182,7 +184,7 @@ class Agent(object):
                 sy_sampled_ac = tf.squeeze(tf.multinomial(sy_logits_na, 1), axis=1)
             else:
                 sy_mean, sy_logstd = policy_parameters
-                sy_sampled_ac = sy_mean + sy_logstd * tf.random_normal(shape=tf.shape(sy_mean))
+                sy_sampled_ac = sy_mean + tf.exp(sy_logstd) * tf.random_normal(shape=tf.shape(sy_mean))
         return sy_sampled_ac
 
     #========================================================================================#
@@ -219,7 +221,7 @@ class Agent(object):
                     logits=sy_logits_na)
             else:
                 sy_mean, sy_logstd = policy_parameters
-                probabilities = tf.distributions.Normal(sy_mean, sy_logstd).prob(sy_ac_na)
+                probabilities = tf.distributions.Normal(sy_mean, tf.exp(sy_logstd)).prob(sy_ac_na)
                 sy_logprob_n = tf.log(tf.reduce_prod(probabilities, axis=1))
         return sy_logprob_n
 
@@ -312,7 +314,7 @@ class Agent(object):
             #====================================================================================#
             #                           ----------PROBLEM 3----------
             #====================================================================================#
-            ac = self.sess.run(self.sy_sampled_ac, feed_dict={self.sy_ob_no: ob[None, :]})
+            ac, policy_parameters = self.sess.run([self.sy_sampled_ac, self.policy_parameters], feed_dict={self.sy_ob_no: ob[None, :]})
             ac = ac[0]
             acs.append(ac)
             ob, rew, done, _ = env.step(ac)
@@ -445,7 +447,10 @@ class Agent(object):
             # (mean and std) of the current batch of Q-values. (Goes with Hint
             # #bl2 in Agent.update_parameters.
             b_n = self.sess.run(self.baseline_prediction, feed_dict={self.sy_ob_no: ob_no})
-            b_n = (b_n - b_n.mean()) / b_n.std() * q_n.std() + q_n.mean()
+            if b_n.std() > EPSILON:
+                b_n = (b_n - b_n.mean()) / b_n.std() * q_n.std() + q_n.mean()
+            else:
+                b_n = q_n.mean()
             adv_n = q_n - b_n
         else:
             adv_n = q_n.copy()
@@ -479,7 +484,7 @@ class Agent(object):
         if self.normalize_advantages:
             # On the next line, implement a trick which is known empirically to reduce variance
             # in policy gradient methods: normalize adv_n to have mean zero and std=1.
-            adv_n = (adv_n - adv_n.mean()) / adv_n.std()
+            adv_n = (adv_n - adv_n.mean()) / (adv_n.std() + EPSILON)
         return q_n, adv_n
 
     def update_parameters(self, ob_no, ac_na, q_n, adv_n):
@@ -514,7 +519,7 @@ class Agent(object):
             # targets to have mean zero and std=1. (Goes with Hint #bl1 in 
             # Agent.compute_advantage.)
 
-            target_n = (q_n - q_n.mean()) / q_n.std()
+            target_n = (q_n - q_n.mean()) / (q_n.std() + EPSILON)
             _, baseline_loss = self.sess.run([self.baseline_update_op, self.baseline_loss],
                 feed_dict={self.sy_ob_no: ob_no, self.sy_target_n: target_n})
 
@@ -536,11 +541,6 @@ class Agent(object):
             ], feed_dict={
                     self.sy_ob_no: ob_no, self.sy_ac_na: ac_na, self.sy_adv_n: adv_n
                 })
-        # print("policy_parameters: ", policy_parameters)
-        # print("ac_na", ac_na)
-        # print("logprob", logprob_n)
-        # print("adv_n", adv_n)
-        # print("loss = adv * logprob_n = ", loss)
         return loss
 
 
