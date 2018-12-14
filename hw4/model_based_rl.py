@@ -21,9 +21,10 @@ class ModelBasedRL(object):
                  training_batch_size=512,
                  render=False,
                  mpc_horizon=15,
-                 num_random_action_selection=4096,
+                 num_random_action_selection= 4096,
                  nn_layers=1):
         self._env = env
+        self._num_init_random_rollouts = num_init_random_rollouts
         self._max_rollout_length = max_rollout_length
         self._num_onpolicy_iters = num_onplicy_iters
         self._num_onpolicy_rollouts = num_onpolicy_rollouts
@@ -85,10 +86,10 @@ class ModelBasedRL(object):
         losses = []
         ### PROBLEM 1
         ### YOUR CODE HERE
-        states, actions, _, next_states, _ = dataset.random_iterator(self._training_batch_size)
-        for i in range(self._training_epochs):
-            loss = self._policy.train_step(states, actions, next_states)
-            losses.append(loss)
+        for states, actions, next_states, _, _ in dataset.random_iterator(self._training_batch_size):
+            for i in range(self._training_epochs):
+                loss = self._policy.train_step(states, actions, next_states)
+                losses.append(loss)
 
         logger.record_tabular('TrainingLossStart', losses[0])
         logger.record_tabular('TrainingLossFinal', losses[-1])
@@ -167,12 +168,12 @@ class ModelBasedRL(object):
         logger.info('Training policy....')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        raise NotImplementedError
+        self._train_policy(self._random_dataset)
 
         logger.info('Evaluating policy...')
         ### PROBLEM 2
         ### YOUR CODE HERE
-        raise NotImplementedError
+        eval_dataset = self._gather_rollouts(self._policy, self._num_init_random_rollouts)
 
         logger.info('Trained policy')
         self._log(eval_dataset)
@@ -196,16 +197,16 @@ class ModelBasedRL(object):
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Training policy...')
-            raise NotImplementedError
+            self._train_policy(dataset)
 
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Gathering rollouts...')
-            raise NotImplementedError
+            new_dataset = self._gather_rollouts(self._policy, self._num_onpolicy_rollouts)
 
             ### PROBLEM 3
             ### YOUR CODE HERE
             logger.info('Appending dataset...')
-            raise NotImplementedError
+            dataset.append(new_dataset)
 
             self._log(new_dataset)
