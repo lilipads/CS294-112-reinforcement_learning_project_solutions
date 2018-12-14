@@ -25,7 +25,16 @@ Pong learned with Q learning (green is the trained agent):
 ![pong](hw3/img/pong.gif)
 
 ## hw4
-Coming soon
+Using model-based RL along with on-policy rollouts and the random shooting method to learn the policy, the algorith achieves much better results in the half-cheetah task comparing to policy-gradient or actor-critics.
+
+Results from model-based RL:
+
+![model-based](hw4/img/onpolicy_rollout.png)
+
+Resultss from policy-gradient and actor-critics:
+
+![policy-gradient](hw3/img/half-cheetah.png)
+
 
 ## hw5
 Coming soon
