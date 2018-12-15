@@ -14,8 +14,8 @@ import time
 import inspect
 from multiprocessing import Process
 
-from exploration import ExemplarExploration, DiscreteExploration, RBFExploration
-from density_model import Exemplar, Histogram, RBF
+from exploration import DiscreteExploration, RBFExploration, ExemplarExploration
+from density_model import Histogram, RBF, Exemplar
 
 #============================================================================================#
 # Utilities
@@ -528,7 +528,7 @@ def train_AC(
                     the call to exploration.fit_density_model should return nothing
             2. Modify the re_n with the reward bonus by calling exploration.modify_reward
         """
-        old_re_n = re_n
+        old_re_n = re_n[:]
         if dm == 'none':
             pass
         else:
@@ -540,7 +540,7 @@ def train_AC(
             elif dm == 'hist' or dm == 'rbf':
                 ### PROBLEM 1
                 ### YOUR CODE HERE
-                pass
+                exploration.fit_density_model(ob_no)
             else:
                 assert False
 
@@ -552,10 +552,10 @@ def train_AC(
             print('average state', np.mean(ob_no, axis=0))
             print('average action', np.mean(ac_na, axis=0))
 
-            # Logging stuff.
-            # Only works for point mass.
-            if env_name == 'PointMass-v0':
-                np.save(os.path.join(dirname, '{}'.format(itr)), ob_no)
+        # Logging stuff.
+        # Only works for point mass.
+        if env_name == 'PointMass-v0':
+            np.save(os.path.join(dirname, '{}'.format(itr)), ob_no)
         ########################################################################
         agent.update_critic(ob_no, next_ob_no, re_n, terminal_n)
         adv_n = agent.estimate_advantage(ob_no, next_ob_no, re_n, terminal_n)
@@ -578,9 +578,9 @@ def train_AC(
         logz.log_tabular("EpLenStd", np.std(ep_lengths))
         ########################################################################
         logz.log_tabular("Unmodified Rewards Mean", np.mean(old_re_n))
-        logz.log_tabular("Unmodified Rewards Std", np.mean(old_re_n))
+        logz.log_tabular("Unmodified Rewards Std", np.std(old_re_n))
         logz.log_tabular("Modified Rewards Mean", np.mean(re_n))
-        logz.log_tabular("Modified Rewards Std", np.mean(re_n))
+        logz.log_tabular("Modified Rewards Std", np.std(re_n))
         if dm == 'ex2':
             logz.log_tabular("Log Likelihood Mean", np.mean(ll))
             logz.log_tabular("Log Likelihood Std", np.std(ll))
@@ -592,6 +592,7 @@ def train_AC(
         logz.log_tabular("TimestepsSoFar", total_timesteps)
         logz.dump_tabular()
         logz.pickle_tf_vars()
+
 
 def main():
     import argparse

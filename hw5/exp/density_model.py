@@ -57,7 +57,7 @@ class Histogram(Density_Model):
                     2. get the value of self.hist with key bin_name
         """
         bin_names = [self.preprocessor(state) for state in states]
-        counts = [self.hist[bin_name] for bin_name in bin_names]
+        counts = np.array([self.hist[bin_name] for bin_name in bin_names])
         return counts
 
     def get_prob(self, states):
@@ -102,8 +102,7 @@ class RBF(Density_Model):
                 self.means: np array (B, ob_dim)
         """
         B, ob_dim = len(data), len(data[0])
-        raise NotImplementedError
-        self.means = None
+        self.means = np.array(data)
         assert self.means.shape == (B, ob_dim)
 
     def get_prob(self, states):
@@ -142,19 +141,20 @@ class RBF(Density_Model):
             assert states.ndim == self.means.ndim and ob_dim == replay_dim
 
             # 1. Compute deltas
-            deltas = raise NotImplementedError
+            states_expanded = np.repeat(states[:, np.newaxis, :], B, axis=1)
+            deltas = states_expanded - self.means
             assert deltas.shape == (b, B, ob_dim)
 
             # 2. Euclidean distance
-            euc_dists = raise NotImplementedError
+            euc_dists = np.sum(deltas ** 2, axis=2)
             assert euc_dists.shape == (b, B)
 
             # Gaussian
-            gaussians = raise NotImplementedError
+            gaussians = np.exp(- euc_dists / (2 * self.sigma ** 2))
             assert gaussians.shape == (b, B)
 
             # 4. Average
-            densities = raise NotImplementedError
+            densities = np.mean(gaussians, axis=1)
             assert densities.shape == (b,)
 
             return densities
@@ -283,10 +283,11 @@ class Exemplar(Density_Model):
                 state1: tf variable
                 state2: tf variable
             
-            encoder1: tfp.distributions.MultivariateNormalDiag distribution
-            encoder2: tfp.distributions.MultivariateNormalDiag distribution
-            prior: tfp.distributions.MultivariateNormalDiag distribution
-            discriminator: tfp.distributions.Bernoulli distribution
+            return:
+                encoder1: tfp.distributions.MultivariateNormalDiag distribution
+                encoder2: tfp.distributions.MultivariateNormalDiag distribution
+                prior: tfp.distributions.MultivariateNormalDiag distribution
+                discriminator: tfp.distributions.Bernoulli distribution
 
             TODO:
                 1. z1: sample from encoder1

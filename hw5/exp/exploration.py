@@ -2,7 +2,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 
-from density_model import Density_Model
+# from density_model import Density_Model
 from replay import Replay_Buffer
 
 class Exploration(object):
@@ -57,7 +57,8 @@ class DiscreteExploration(Exploration):
             args:
                 states: (bsize, ob_dim)
         """
-        pass
+        for state in states:
+            self.density_model.update_count(state, 1)
 
     def bonus_function(self, count):
         """
@@ -67,7 +68,7 @@ class DiscreteExploration(Exploration):
             args:
                 count: np array (bsize)
         """
-        return count ** -0.5
+        return (count + 1e-8) ** -0.5
 
     def compute_reward_bonus(self, states):
         """
@@ -99,7 +100,7 @@ class ContinuousExploration(Exploration):
             args:
                 prob: np array (bsize,)
         """
-        raise NotImplementedError
+        return np.array(-np.log(prob))
 
     def compute_reward_bonus(self, states):
         """
@@ -109,9 +110,8 @@ class ContinuousExploration(Exploration):
             args:
                 states: (bsize, ob_dim)
         """
-        raise NotImplementedError
-        prob = None
-        bonus = None
+        prob = self.density_model.get_prob(states)
+        bonus = self.bonus_function(prob)
         return bonus
 
 
