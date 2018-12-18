@@ -15,18 +15,42 @@ Here is a qualitative result of the Pong game learned with Q learning at peak pe
 
 For the second part of the project, I implemented the actor-critic algorithm (train_ac_f18.py). 
 
-Here are the cartpole training results with different hyperparameters. To read the legend, the first number denotes the number of times we update the target network per training cycle, and the second number denotes the number of times we take the gradient step to update the critic network for each target network udpate.
+Here are the cartpole training results with different hyperparameters. To read the legend, the first number denotes the number of times we update the target network per training cycle (hereafter referred to as ntu), and the second number denotes the number of times we take the gradient step to update the critic network for each target network udpate (hereafter referred to as ngsptu). A setting of ntu = 10 and ngsptu = 10 achieves the best result.
+
+![cart-pole](img/actor_critic_cartpole.png)
+
+```
+python train_ac_f18.py CartPole-v0 -n 100 -b 1000 -e 3 --exp_name 1_1 -ntu 1 -ngsptu 1
+python train_ac_f18.py CartPole-v0 -n 100 -b 1000 -e 3 --exp_name 100_1 -ntu 100 -ngsptu 1
+python train_ac_f18.py CartPole-v0 -n 100 -b 1000 -e 3 --exp_name 1_100 -ntu 1 -ngsptu 100
+python train_ac_f18.py CartPole-v0 -n 100 -b 1000 -e 3 --exp_name 10_10 -ntu 10 -ngsptu 10
+```
 
 ![InvertedPendulum](img/inverted_pendulum_10_10.png)
 
-As shown, the policy gradient algorithm performs much better than actor critic: the former reaches maximum reward in 40 iterations, and the latter in 100 iterations.
+As shown, the actor critic is slightly better than policy gradient (with reward to go) under the same parameter setting.
 
-I also did the comparision for the half cheetah task. 
+```
+# policy gradient without reward-to-go
+~/hw2: python train_pg_f18.py InvertedPendulum-v2 -ep 1000 --discount 0.9 -n 100 -e 3 -l 2 -s 64 -b  5000 -lr 0.01 --exp_name ip_b5000_lr0.01
+# policy gradient with reward-to-go
+~/hw2: python train_pg_f18.py InvertedPendulum-v2 -ep 1000 --discount 0.95 -n 100 -e 3 -l 2 -s 64 -b  5000 -lr 0.01 -rtg --exp_name ip_b5000_lr0.01_rtg
+# actor critics
+~/hw3: python train_ac_f18.py InvertedPendulum-v2 -ep 1000 --discount  0.95 -n 100 -e 3 -l 2 -s 64 -b 5000 -lr 0.01 --exp_name 10_10 -ntu 10 -ngsptu 10
+```
+
+I also did the comparision for the half cheetah task, and the comparison in results is similar.
 
 ![halfCheetah](img/half-cheetah.png)
 
-Here, the actor critic performs better than policy gradient. Performance does vary across the seed.
-
+```
+# policy gradient without reward-to-go
+~/hw2: python train_pg_f18.py HalfCheetah-v2 -ep 150 --discount 0.9 -n 100 -e 3 -l 2 -s 32 -b 30000 -lr 0.02 --exp_name hc_b30000_r0.02
+# policy gradient with reward-to-go
+~/hw2: python train_pg_f18.py HalfCheetah-v2 -ep 150 --discount 0.9 -n 100 -e 3 -l 2 -s 32 -b 30000 -lr 0.02 -rtg --exp_name hc_b30000_r0.02
+# actor critics
+~/hw3: python train_ac_f18.py HalfCheetah-v2 -ep 150 --discount 0.9 -n 100 -e 3 -l 2 -s 32 -b 30000 -lr 0.02 --exp_name 10_10  -ntu 10 -ngsptu 10
+```
 
 ## Dependencies:
  * Python **3.5**
