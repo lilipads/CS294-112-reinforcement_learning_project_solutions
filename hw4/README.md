@@ -10,32 +10,34 @@ Problem 2:
 
 Next we build a first version of a policy exploiting the learned model. Here, we randomly draw 4096 sequences of actions from all possible combinations over a finite horizon (15). Using the MPC model, we pick the sequence with the lowest cost, and execute only the first action. We repeat the process to select the next option.
 
-The training process is ~20 min on my 8GB Macbook Air with Core i5. The output varies across the runs, but on average, I didn't observe substantial improvement from the random baseline (see below), far from the expected return of 0 as claimed in the problem set instruction.
+The training process is ~20 min on my 8GB Macbook Air with Core i5. The output varies across the runs, but on average, I didn't observe substantial improvement from the random baseline (results vary across runs), far from the expected return of 0 as claimed in the problem set instruction.
 
 ```
 Random policy
 ---------  ---------
-ReturnAvg  -142.612
-ReturnMax  -105.345
-ReturnMin  -213.294
-ReturnStd    30.5591
+ReturnAvg  -174.54
+ReturnMax  -104.039
+ReturnMin  -273.462
+ReturnStd    56.0964
 ---------  ---------
 
 Trained policy
------------------  -------------
-ReturnAvg          -138.456
-ReturnMax          -108.594
-ReturnMin          -177.594
-ReturnStd            23.0199
-TrainingLossFinal     0.00683294
-TrainingLossStart     2.63199
------------------  -------------
+-----------------  ------------
+ReturnAvg          -125.321
+ReturnMax            76.5372
+ReturnMin          -363.205
+ReturnStd           130.181
+TrainingLossFinal     0.0839844
+TrainingLossStart    13.8302
+-----------------  ------------
 ```
 
 Problem 3:
 
 Improving upon the previous result, we now use an on-policy rollout. For each iteration in the 10 iterations, we train the policy, and gather another rollout using the latest policy, and add it to the existing dataset to be used for training in the next iteration.
 
-Results here are substantially better, and steadily improve over iterations. At the end of the 10 iterations, it achieves an average return of 187 (though lower than the result of 300 as claimed by the problem set instruction). Notably, this is much better than the best results we have achieved in the half cheetah task using policy gradient or actor-critics (which hovers around 0).
+Results here are substantially better, and steadily improve over iterations. At the end of the 10 iterations, it achieves an average return of 187 (though lower than the result of 300 as claimed by the problem set instruction).
 
 ![q3](img/onpolicy_rollout.png)
+
+However, we can't directly compare the results on half-cheetah from policy-gradient or actor-critic algorithm here, because in model-based RL, the half-cheetah environment we are using provides a hand-crafted cost function and the the cleverness of the crafting in this function certainly affects performance.
