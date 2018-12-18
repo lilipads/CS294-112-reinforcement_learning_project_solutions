@@ -34,14 +34,30 @@ Adding reward-to-go and normalization progressively improves the performance of 
 
 ![compare_features](img/compare_features.png)
 
+```
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -dna --exp_name sb_no_rtg_dna
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -rtg -dna --exp_name sb_rtg_dna
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -rtg --exp_name sb_rtg_na
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -rtg --nn_baseline --exp_name sb_rtg_nn_baseline
+```
+
 Making the batch size larger (collect more samples from the simulator in between each training epoch) also makes the model to converge faster. Here, a small batch is 1000 runs and a large batch is 5000 runs.
 
 ![compare_batch](img/compare_batch.png)
+
+'''
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -rtg -dna --exp_name sb_rtg_dna
+python train_pg_f18.py CartPole-v0 -n 100 -b 5000 -e 3 -rtg -dna --exp_name lb_rtg_dna
+'''
 
 However, the advantage diminishes in this task when we use reward-to-go along as normalization, as the small batch size (1000) already converges quite fast.
 
 ![diminish_advantage](img/diminish_advantage.png)
 
+'''
+python train_pg_f18.py CartPole-v0 -n 100 -b 1000 -e 3 -rtg --exp_name sb_rtg_na
+python train_pg_f18.py CartPole-v0 -n 100 -b 5000 -e 3 -rtg --exp_name lb_rtg_na
+'''
 
 ## Dependencies:
  * Python **3.5**
