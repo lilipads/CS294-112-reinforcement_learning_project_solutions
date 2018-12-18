@@ -77,9 +77,9 @@ class ModelBasedPolicy(object):
             self._init_dataset.action_std)
         sy_normed_state_action = tf.concat([sy_normed_state, sy_normed_action], 1)
         sy_normed_next_state_diff_pred = utils.build_mlp(sy_normed_state_action,
-            self._state_dim, "dynamics", reuse=reuse)
-        sy_next_state_pred = utils.unnormalize(sy_normed_next_state_diff_pred + state_ph,
-            self._init_dataset.state_mean, self._init_dataset.state_std)
+            self._state_dim, "dynamics", n_layers=self._nn_layers, reuse=reuse)
+        sy_next_state_pred = utils.unnormalize(sy_normed_next_state_diff_pred,
+            self._init_dataset.state_mean, self._init_dataset.state_std) + state_ph
 
         return sy_next_state_pred
 
@@ -142,7 +142,7 @@ class ModelBasedPolicy(object):
         ### PROBLEM 2
         ### YOUR CODE HERE
         first_actions = tf.random_uniform([self._num_random_action_selection, self._action_dim],
-            minval=-1, maxval=1)
+            minval=self._action_space_low, maxval=self._action_space_high)
         actions = first_actions
         states = tf.ones([self._num_random_action_selection, 1]) * state_ph
         total_costs = tf.zeros([self._num_random_action_selection])
@@ -151,11 +151,9 @@ class ModelBasedPolicy(object):
             next_states = self._dynamics_func(states, actions, reuse=True)
             total_costs += self._cost_fn(states, actions, next_states)
             actions = tf.random_uniform([self._num_random_action_selection, self._action_dim],
-                minval=-1, maxval=1)
+                minval=self._action_space_low, maxval=self._action_space_high)
             states = next_states
 
-        # self.total_costs = total_costs
-        # self.random_actions = first_actions
         sy_best_action = first_actions[tf.argmin(total_costs)]
         return sy_best_action
 
@@ -232,12 +230,8 @@ class ModelBasedPolicy(object):
 
         ### PROBLEM 2
         ### YOUR CODE HERE
-        best_action, random_actions, total_costs = self._sess.run([self._sy_best_action, self.random_actions, self.total_costs], feed_dict={
-            self._state_ph: [state]
-            })
-        # print("best_action", best_action)
-        # print("random_actions", random_actions)
-        # print("total_costs", total_costs)
+        best_action = self._sess.run(self._sy_best_action, feed_dict={
+            self._state_ph: [state]})
 
         assert np.shape(best_action) == (self._action_dim,)
         return best_action

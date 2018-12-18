@@ -100,7 +100,7 @@ class ContinuousExploration(Exploration):
             args:
                 prob: np array (bsize,)
         """
-        return np.array(-np.log(prob))
+        return -np.log(prob)
 
     def compute_reward_bonus(self, states):
         """
@@ -169,6 +169,6 @@ class ExemplarExploration(ContinuousExploration):
                 positives, negatives = self.sample_idxs(states, self.bsize)
             labels = np.concatenate([np.ones((self.bsize, 1)), np.zeros((self.bsize, 1))], axis=0)
             ll, kl, elbo = self.density_model.update(positives, negatives, labels)
-            if i % (self.train_iters/10) == 0:
-                print('log likelihood\t{}\tkl divergence\t{}\t-elbo\t{}'.format(np.mean(ll), np.mean(kl), -elbo))
+            # if i % (self.train_iters/10) == 0:
+            #     print('log likelihood\t{}\tkl divergence\t{}\t-elbo\t{}'.format(np.mean(ll), np.mean(kl), -elbo))
         return ll, kl, elbo

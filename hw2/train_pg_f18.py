@@ -147,8 +147,7 @@ class Agent(object):
             sy_mean = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
-            sy_logstd = tf.get_variable(name="sy_logstd", shape=[self.ac_dim], dtype=tf.float32,
-                initializer=tf.ones_initializer)
+            sy_logstd = sy_logstd = tf.Variable(tf.zeros(self.ac_dim), name='sy_logstd')
             return (sy_mean, sy_logstd)
 
     #========================================================================================#
@@ -447,10 +446,7 @@ class Agent(object):
             # (mean and std) of the current batch of Q-values. (Goes with Hint
             # #bl2 in Agent.update_parameters.
             b_n = self.sess.run(self.baseline_prediction, feed_dict={self.sy_ob_no: ob_no})
-            if b_n.std() > EPSILON:
-                b_n = (b_n - b_n.mean()) / b_n.std() * q_n.std() + q_n.mean()
-            else:
-                b_n = q_n.mean()
+            b_n = (b_n - b_n.mean()) / (b_n.std() + EPSILON) * q_n.std() + q_n.mean()
             adv_n = q_n - b_n
         else:
             adv_n = q_n.copy()

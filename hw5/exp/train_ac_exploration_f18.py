@@ -408,6 +408,9 @@ def train_AC(
     if env_name == 'PointMass-v0':
         from pointmass import PointMass
         env = PointMass()
+    elif env_name == 'sparse_half_cheetah':
+        from sparse_half_cheetah import HalfCheetahEnv
+        env = HalfCheetahEnv()
     else:
         env = gym.make(env_name)
     dirname = logz.G.output_dir
@@ -486,7 +489,6 @@ def train_AC(
                 train_iters=density_train_iters, 
                 bsize=density_batch_size,
                 replay_size=int(replay_size))
-            exploration.density_model.build_computation_graph()
         else:
             raise NotImplementedError
 
@@ -536,7 +538,7 @@ def train_AC(
             if dm == 'ex2':
                 ### PROBLEM 3
                 ### YOUR CODE HERE
-                raise NotImplementedError
+                ll, kl, elbo = exploration.fit_density_model(ob_no)
             elif dm == 'hist' or dm == 'rbf':
                 ### PROBLEM 1
                 ### YOUR CODE HERE

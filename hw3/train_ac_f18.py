@@ -140,8 +140,7 @@ class Agent(object):
             sy_mean = build_mlp(
                 sy_ob_no, self.ac_dim, scope, self.n_layers, self.size,
                 activation=tf.nn.relu, output_activation=None)
-            sy_logstd = tf.get_variable(name="sy_logstd", shape=[self.ac_dim], dtype=tf.float32,
-                initializer=tf.ones_initializer)
+            sy_logstd = tf.Variable(tf.zeros(self.ac_dim), name='sy_logstd')
             return (sy_mean, sy_logstd)
 
     def sample_action(self, policy_parameters):
@@ -338,11 +337,8 @@ class Agent(object):
         v_s_t_n = self.sess.run(self.critic_prediction, feed_dict={
             self.sy_ob_no: ob_no})
 
-        for v_s_tp1, v_s_t, re, terminal in zip(v_s_tp1_n, v_s_t_n, re_n, terminal_n):
-            q = re
-            if not terminal:
-                q += self.gamma * v_s_tp1
-            adv_n.append(q - v_s_t)
+        q_n = re_n + self.gamma * v_s_tp1_n * (1-terminal_n)
+        adv_n = q_n - v_s_t_n
 
         if self.normalize_advantages:
             adv_n = np.array(adv_n)
@@ -380,11 +376,7 @@ class Agent(object):
             target_n = []
             v_s_tp1_n = self.sess.run(self.critic_prediction, feed_dict={
                 self.sy_ob_no: next_ob_no})
-            for re, v_s_tp1, terminal in zip(re_n, v_s_tp1_n, terminal_n):
-                if not terminal:
-                    target_n.append(re + self.gamma * v_s_tp1)
-                else:
-                    target_n.append(re)
+            target_n = re_n + self.gamma * v_s_tp1_n * (1 - terminal_n)
 
             for j in range(self.num_grad_steps_per_target_update):
                 self.sess.run(self.critic_update_op, feed_dict={
