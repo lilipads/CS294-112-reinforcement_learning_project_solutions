@@ -1,6 +1,6 @@
 # CS294-112 HW 5a: Exploration
 ## Overview
-In this project, I implemented applied exploration in actor-critics training. This type of exploration is useful for environments where the reward is sparse. Specifically, we calculate a bonus for each state based on how frequent we have visited the state before, and add the bonus to the reward function to encourage the agent to explore rarely-seen states. I calcuate the bonus in three ways.
+In this project, I applied exploration in actor-critics training. This type of exploration is useful for environments where the reward is sparse. Specifically, we calculate a bonus for each state based on how frequent we have visited the state before, and add the bonus to the reward function to encourage the agent to explore rarely-seen states. I calcuate the bonus in three ways.
 
 a) Histogram Model: bin states into discrete cases and simply counting each time a state is seen, N(s). The bonus is then N(s) ^-1/2 
 b) Kernel Density Estimate (RBF): estimate the density of a new datapoint by plopping a Gaussian distribution centered around each of the existing datapoints
