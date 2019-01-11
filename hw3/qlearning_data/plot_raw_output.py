@@ -12,7 +12,7 @@ mean_reward = pickle.load(open(data_dir + '/mean_reward.pkl', 'rb'))
 best_mean_reward = pickle.load(open(data_dir + '/best_mean_reward.pkl', 'rb'))
 
 plt.ticklabel_format(style='sci', axis='x', scilimits=(0, 4))
-p = plt.plot(timesteps, mean_reward, label="duoble learning")
+p = plt.plot(timesteps, mean_reward, label="double learning")
 p = plt.plot(timesteps1, mean_reward1, label="without double q")
 plt.xlabel('Timestep')
 plt.ylabel('Mean Reward')
