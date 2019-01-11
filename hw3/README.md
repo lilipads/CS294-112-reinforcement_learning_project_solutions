@@ -5,7 +5,7 @@ In this project, I implemented Q learning (dqn.py) and compared two variants of 
 
 ![double_q](img/qlearning_pong_reward.png)
 
-Double Q learning results in higher rewards for the same number of episodes in the initial training. However, oddly, after ~800K steps, the double-q results are worse; and after 2.3m episodes, performance of the agent deteriorates.
+Oddly, the double-q results are worse.(Thanks DanielTakeshi[https://github.com/DanielTakeshi] for pointing out a bug!)
 
 Here is a qualitative result of the Pong game learned with Q learning at peak performance (green is the trained agent):
 
