@@ -5,7 +5,7 @@ In this project, I implemented Q learning (dqn.py) and compared two variants of 
 
 ![double_q](img/qlearning_pong_reward.png)
 
-Oddly, the double-q results are worse.(Thanks DanielTakeshi[https://github.com/DanielTakeshi] for pointing out a bug!)
+Oddly, the double-q results are worse.(Thanks DanielTakeshi[https://github.com/DanielTakeshi] for pointing out a bug! After fixing the bug, it got better, but I haven't got the full results to post here.)
 
 Here is a qualitative result of the Pong game learned with Q learning at peak performance (green is the trained agent):
 
