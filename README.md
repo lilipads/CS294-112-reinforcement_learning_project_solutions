@@ -1,5 +1,5 @@
 # Reinforcement Learning Projects
-This is my solution (WIP) to Berkeley's Deep Reinforcement Learning Class CS294-112 in Fall 2018. It consists of five projects, each of which is an implementation of a reinforcement learning algorithm. I am continuously updating this repository as I go along the course. Below are the highlights of the results:
+This is my solution to Berkeley's Deep Reinforcement Learning Class CS294-112 in Fall 2018. It consists of five projects, each of which is an implementation of a reinforcement learning algorithm. I am continuously updating this repository as I go along the course. Below are the highlights of the results:
 
 ## hw1: Behavorial Cloning
 In this project, I implemented the vanilla behaviorial cloning along with the DAgger variant to succesfully train a few MuJoCo tasks. Example:
